@@ -5,7 +5,7 @@ const MAZE_LENGTH = 44;
 const MAZE_WIDTH = 50;
 
 const WALL_WIDTH = 3.5;
-const BALL_DIAMETER = 2;
+const BALL_DIAMETER = 4;
 const BALL_RADIUS = BALL_DIAMETER/2;
 
 //Shouldn't need this at all after we get wall collisions right and mouse drag right
@@ -60,50 +60,6 @@ class Wall {
     this.mesh = new THREE.Mesh(this.geometry, this.material);
   }
 
-  // checkCollision(ballDirection) {
-  //   let distBtwnCenters = (ballDirection === "up" || ballDirection == "down") ? BALL_RADIUS + this.width/2 : BALL_RADIUS + this.length/2;
-  //   if (ballDirection === "up") {
-  //     if ((ball.position.z - this.mesh.position.z) <= distBtwnCenters) {
-  //       console.log("upward collision detected");
-  //       return true;
-  //     }
-  //   } else if (ballDirection === "down") {
-  //     if ((this.mesh.position.z - ball.position.z) <= distBtwnCenters) {
-  //       console.log("downward collision detected");
-  //       return true;
-  //     }
-  //   } else if (ballDirection === "left") {
-  //     if (Math.abs(ball.position.x - this.mesh.position.x) <= distBtwnCenters) {
-  //       console.log("left collision detected");
-  //       return true;
-  //     }
-  //   } else if (ballDirection === "right") {
-  //     if (Math.abs(this.mesh.position.x - ball.position.x) <= distBtwnCenters) {
-  //       console.log("right collision detected");
-  //       return true;
-  //     }
-  //   }
-  //   return false;
-  // }
-
-
-
-  // checkHorizontalCollision(ballDirection) {
-  //   let distBtwnCenters = BALL_RADIUS + this.length/2;
-  //   if (ballDirection === "left") {
-  //     if (Math.abs(ball.position.x - this.mesh.position.x) <= distBtwnCenters) {
-  //       console.log("left collision detected");
-  //       return true;
-  //     }
-  //   } else if (ballDirection === "right") {
-  //     if (Math.abs(this.mesh.position.x - ball.position.x) <= distBtwnCenters) {
-  //       console.log("right collision detected");
-  //       return true;
-  //     }
-  //   }
-  //   return false;
-  // }
-
 }
 
 //Fill array of all walls
@@ -140,15 +96,13 @@ let ballGeometry = new THREE.SphereGeometry(BALL_RADIUS, 16, 12);
 let ballMaterial = new THREE.MeshLambertMaterial({color: 0xAD0363});
 let ball = new THREE.Mesh(ballGeometry, ballMaterial);
 ball.position.set(-(MAZE_WIDTH/2-WALL_WIDTH*1.5) + 1, 0, -(MAZE_LENGTH/2-WALL_WIDTH*1.5) + 1);
-//REMOVE LATER
-//ball.position.set(15, 0, 15);
 scene.add(ball);
 
 //Create the goal cube
 let goalGeometry = new THREE.BoxGeometry(2, 2, 2);
 let goalMaterial = new THREE.MeshLambertMaterial({color: 0x80F442});
 let goal = new THREE.Mesh(goalGeometry, goalMaterial);
-goal.position.set(MAZE_WIDTH/2-WALL_WIDTH*1.75, 1.5, MAZE_LENGTH/2-WALL_WIDTH*1.75);
+goal.position.set(MAZE_WIDTH/2 - WALL_WIDTH*2, 1.5, MAZE_LENGTH/2 - WALL_WIDTH*1.5);
 scene.add(goal);
 
 goal.isGoal = true;
@@ -221,7 +175,7 @@ function onDocumentMouseDown(event) {
   console.log(mouse.x);
   mouse.y = event.clientY / window.innerHeight;
 
-  //stuff required for raycasting, probably shouldn't change
+  //Stuff required for raycasting, probably shouldn't change
   let mouseX = (event.clientX / window.innerWidth) * 2 - 1;
   let mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
   let vector = new THREE.Vector3(mouseX, mouseY, 1);
@@ -284,31 +238,29 @@ function onDocumentMouseUp(event) {
 }
 
 function checkAllWalls(ballDirection) {
-  // if (ballDirection === "up" || ballDirection === "down") {
-  //   for (let i = 0; i < walls.length; i++) {
-  //     if (walls[i].checkVerticalCollision(ballDirection)) {
-  //       return true;
-  //     }
-  //   }
-  // } else if (ballDirection === "left" || ballDirection === "right") {
-  //   for (let i = 0; i < walls.length; i++) {
-  //     if (walls[i].checkHorizontalCollision(ballDirection)) {
-  //       return true;
-  //     }
-  //   }
-  // }
-
   for (let i = 0; i < walls.length; i++) {
     if (walls[i].checkCollision(ballDirection)) {
       return true;
     }
   }
   return false;
-
 }
 
 function checkCollisionWithRays(ballDirection) {
   let originPoint = ball.position.clone();
+
+  if (ballDirection == "left") {
+    originPoint.x -= BALL_SPEED_TEMP;
+  }
+  if (ballDirection == "right") {
+    originPoint.x += BALL_SPEED_TEMP;
+  }
+  if (ballDirection == "up") {
+    originPoint.z -= BALL_SPEED_TEMP;
+  }
+  if (ballDirection == "down") {
+    originPoint.z += BALL_SPEED_TEMP;
+  }
 
   for (let vertexIndex = 0; vertexIndex < ball.geometry.vertices.length; vertexIndex++) {
     let localVertex = ball.geometry.vertices[vertexIndex].clone();
@@ -320,29 +272,8 @@ function checkCollisionWithRays(ballDirection) {
 
     if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
       console.log("COLLISION");
-      //let difference = collisionResults[0].distance - directionVector.length();
-      //moveInOppositeDir(difference, ballDirection);
       return collisionResults[0];
     }
-  }
-}
-
-//Tried to use this to avoid jitter. Didn't work, so I just flipped the dx/dz to at least have it bounce back a little
-function moveInOppositeDir(distance, ballDirection) {
-  distance++;
-  switch (ballDirection) {
-    case "up":
-      ball.position.z += distance;
-      break;
-    case "down":
-      ball.position.z -= distance;
-      break;
-    case "left":
-      ball.position.x += distance;
-      break;
-    case "right":
-      ball.position.x -= distance;
-      break;
   }
 }
 
@@ -353,46 +284,58 @@ function updateBallPosition() {
   let dx = 0;
   let dz = 0;
 
+  let direction = "";
+
   if (leftPressed /*&& !checkAllWalls("left")*/) {
     dx += -BALL_SPEED_TEMP;
+    direction = "left";
+    //UGLY CODE LMAO
+    let collidedWith = checkCollisionWithRays(direction);
+    if (collidedWith) {
+      dx -= -BALL_SPEED_TEMP;
+      if (collidedWith.object.isGoal) {
+        console.log("GOAL!");
+      }
+    }
   }
   if (rightPressed /*&& !checkAllWalls("right")*/) {
     dx += BALL_SPEED_TEMP;
+    direction = "right";
+    //UGLY FIX this
+    let collidedWith = checkCollisionWithRays(direction);
+    if (collidedWith) {
+      dx -= BALL_SPEED_TEMP;
+      if (collidedWith.object.isGoal) {
+        console.log("GOAL!");
+      }
+    }
   }
   if (upPressed /*&& !checkAllWalls("up")*/) {
     dz += -BALL_SPEED_TEMP;
+    direction = "up";
+    //UGLY!!
+    let collidedWith = checkCollisionWithRays(direction);
+    if (collidedWith) {
+      dz -= -BALL_SPEED_TEMP;
+      if (collidedWith.object.isGoal) {
+        console.log("GOAL!");
+      }
+    }
   }
   if (downPressed /*&& !checkAllWalls("down")*/) {
     dz += BALL_SPEED_TEMP;
-  }
-
-  let collidedWith = checkCollisionWithRays();
-  if (collidedWith) {
-    if (leftPressed || rightPressed) {
-      dx = -dx;
-    } else if (upPressed || downPressed) {
-      dz = -dz;
-    }
-    console.log(collidedWith);
-    if (collidedWith.object.isGoal) {
-      console.log("GOAL!");
+    direction = "down";
+    //UGGO
+    let collidedWith = checkCollisionWithRays(direction);
+    if (collidedWith) {
+      dz -= BALL_SPEED_TEMP;
+      if (collidedWith.object.isGoal) {
+        console.log("GOAL!");
+      }
     }
   }
 
   ball.position.set(prevBallX + dx, 0, prevBallZ + dz);
-
-  //Also tried again here to stop the jittering, but this was a really bad idea and it gave me an infinite loop lol
-  // while (checkCollisionWithRays()) {
-  //   if (leftPressed) {
-  //     ball.position.x++;
-  //   } else if (rightPressed) {
-  //     ball.position.x--;
-  //   } else if (upPressed) {
-  //     ball.position.z++;
-  //   } else if (downPressed) {
-  //     ball.position.z--;
-  //   }
-  // }
 
   //Another try at dragging stuff
   // if (ballSelected) {
@@ -411,6 +354,15 @@ function updateBallPosition() {
   // }
 }
 
+let t = 0;
+
+function updateGoalAnimation() {
+  t++;
+  goal.position.y = Math.sin(t*0.05) + 1.5;
+  goal.rotation.x = Math.sin(t*0.03);
+  goal.rotation.z = Math.sin(t*0.02);
+}
+
 function renderGame() {
   requestAnimationFrame(renderGame);
   renderer.render(scene, camera);
@@ -418,6 +370,7 @@ function renderGame() {
   //   updateBallPosition();
   // }
   updateBallPosition();
+  updateGoalAnimation();
 }
 
 renderGame();
