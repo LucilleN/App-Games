@@ -27,6 +27,9 @@ camera.position.set(0, 50, 40);
 camera.rotation.set(-1, 0, 0);
 scene.add(camera);
 
+//Enable renderer window resizing
+let windowResize = new THREEx.WindowResize(renderer, camera);
+
 let light = new THREE.PointLight(0xFFFFFF, 4, 100);
 light.position.set(0, 50, 10);
 light.castShadow = true;
@@ -34,9 +37,6 @@ scene.add(light);
 
 //Raycaster to be used later for selecting the ball with a mouse/touch
 let raycaster = new THREE.Raycaster();
-
-//Enable renderer window resizing
-THREEx.WindowResize(this.renderer, this.camera);
 
 //Create the floor of the maze
 let floorGeometry = new THREE.BoxGeometry(MAZE_WIDTH, 1, MAZE_LENGTH);
@@ -371,6 +371,8 @@ function renderGame() {
   // }
   updateBallPosition();
   updateGoalAnimation();
+  //when done:
+  //windowResize.destroy();
 }
 
 renderGame();
